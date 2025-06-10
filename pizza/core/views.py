@@ -2,6 +2,8 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.db.models import Sum, Count
+from django.db.models.functions import TruncDate
 
 from .forms import PedidoForm
 from .models import Pedido
@@ -30,3 +32,13 @@ def pedidos(request):
         'pedidos_list': Pedido.objects.all().order_by('-fecha_pedido')
     }
     return render(request, 'core/pedidos.html', data)
+
+def dashboard(request):
+    ventas_diarias = Pedido.objects.annotate(
+        fecha=TruncDate('fecha_pedido')
+    ).values('fecha').annotate(
+        total=Sum('total_pedido'),
+        cantidad=Count('id')
+    ).order_by('-fecha')
+    
+    return render(request, 'core/dashboard.html', {'ventas': ventas_diarias})
