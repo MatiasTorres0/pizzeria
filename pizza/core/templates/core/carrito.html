@@ -1,0 +1,113 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Carrito de Compras{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h2 class="mb-4">Tu Carrito</h2>
+    
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Pizza</th>
+                    <th>Cantidad</th>
+                    <th>Precio</th>
+                    <th>Subtotal</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="cart-items">
+                <!-- Items del carrito via JavaScript -->
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                    <td id="cart-total">$0.00</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <button class="btn btn-danger" id="clear-cart">Limpiar Carrito</button>
+        </div>
+        <div class="col-md-6 text-end">
+            <button class="btn btn-primary" id="checkout">Proceder al Pago</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function actualizarCantidad(id, cambio) {
+    let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+    const index = carrito.findIndex(item => item.id === id);
+    
+    if (index !== -1) {
+        carrito[index].cantidad = Math.max(1, carrito[index].cantidad + cambio);
+        localStorage.setItem('carrito', JSON.stringify(carrito));
+        cargarCarrito();
+        actualizarContadorCarrito();
+    }
+}
+
+function eliminarItem(id) {
+    let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+    carrito = carrito.filter(item => item.id !== id);
+    localStorage.setItem('carrito', JSON.stringify(carrito));
+    cargarCarrito();
+    actualizarContadorCarrito();
+}
+
+function cargarCarrito() {
+    const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+    const tbody = document.getElementById('cart-items');
+    const total = document.getElementById('cart-total');
+    let totalPedido = 0;
+    
+    tbody.innerHTML = '';
+    
+    carrito.forEach(item => {
+        const subtotal = item.precio * item.cantidad;
+        totalPedido += subtotal;
+        
+        tbody.innerHTML += `
+            <tr>
+                <td>${item.nombre}</td>
+                <td>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="actualizarCantidad('${item.id}', -1)">-</button>
+                        <span class="btn btn-sm">${item.cantidad}</span>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="actualizarCantidad('${item.id}', 1)">+</button>
+                    </div>
+                </td>
+                <td>$${item.precio}</td>
+                <td>$${subtotal.toFixed(2)}</td>
+                <td>
+                    <button class="btn btn-sm btn-danger" onclick="eliminarItem('${item.id}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    total.textContent = `$${totalPedido.toFixed(2)}`;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    cargarCarrito();
+    
+    document.getElementById('clear-cart').addEventListener('click', function() {
+        localStorage.removeItem('carrito');
+        cargarCarrito();
+        actualizarContadorCarrito();
+    });
+});
+</script>
+{% endblock %}

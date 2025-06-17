@@ -1,0 +1,164 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand" href="{% url 'core:inicio' %}">
+            <i class="bi bi-shop"></i> Pizzería
+        </a>
+        
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'core:inicio' %}">
+                        <i class="bi bi-house-door"></i> Inicio
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'core:menu' %}">
+                        <i class="bi bi-grid"></i> Menú
+                    </a>
+                </li>
+                
+                <li class="nav-item position-relative">
+                    <a class="nav-link" href="{% url 'core:carrito' %}">
+                        <i class="bi bi-cart"></i> Carrito
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cart-count" style="font-size: 0.75rem;">
+                            0
+                        </span>
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'core:pedidos' %}">
+                        <i class="bi bi-list-check"></i> Pedidos
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<script>
+// Función central para actualizar el contador del carrito
+function actualizarContadorCarrito() {
+    try {
+        const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+        const totalItems = carrito.reduce((sum, item) => sum + item.cantidad, 0);
+        const cartCount = document.getElementById('cart-count');
+        
+        if (cartCount) {
+            cartCount.textContent = totalItems;
+            cartCount.style.display = totalItems > 0 ? 'inline-block' : 'none';
+        }
+    } catch (error) {
+        console.error('Error actualizando el contador:', error);
+    }
+}
+
+// Inicialización al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    actualizarContadorCarrito();
+    
+    // Si estamos en la página del menú, activamos la lógica completa del carrito
+    const addToCartButtons = document.querySelectorAll('.btn-add-cart');
+    
+    if (addToCartButtons.length > 0) {
+        let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+        
+        // Actualiza la interfaz de los botones según el estado del carrito
+        function actualizarBotonesCarrito() {
+            document.querySelectorAll('.btn-add-cart').forEach(btn => {
+                const pizzaId = btn.dataset.id;
+                const item = carrito.find(i => i.id === pizzaId);
+                const container = btn.closest('.card-body').querySelector('.cart-controls');
+                const quantityDisplay = container?.querySelector('.quantity-display');
+                
+                if (item) {
+                    btn.classList.add('d-none');
+                    container?.classList.remove('d-none');
+                    if (quantityDisplay) quantityDisplay.value = item.cantidad;
+                } else {
+                    btn.classList.remove('d-none');
+                    container?.classList.add('d-none');
+                }
+            });
+        }
+        
+        // Evento para añadir al carrito
+        document.querySelectorAll('.btn-add-cart').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const pizzaId = this.dataset.id;
+                const pizzaNombre = this.dataset.nombre;
+                const pizzaPrecio = parseFloat(this.dataset.precio);
+                
+                let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+                const itemExistente = carrito.find(item => item.id === pizzaId);
+                
+                if (itemExistente) {
+                    itemExistente.cantidad += 1;
+                } else {
+                    carrito.push({
+                        id: pizzaId,
+                        nombre: pizzaNombre,
+                        precio: pizzaPrecio,
+                        cantidad: 1
+                    });
+                }
+                
+                localStorage.setItem('carrito', JSON.stringify(carrito));
+                actualizarContadorCarrito();
+                actualizarBotonesCarrito();
+                mostrarToast('¡Producto agregado al carrito!');
+            });
+        });
+        
+        // Eventos para incrementar/disminuir cantidad
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.btn-plus') || e.target.closest('.btn-minus')) {
+                const btn = e.target.closest('.btn-plus, .btn-minus');
+                const pizzaId = btn.dataset.id;
+                let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+                const item = carrito.find(i => i.id === pizzaId);
+                
+                if (btn.classList.contains('btn-plus')) {
+                    if (item) {
+                        item.cantidad += 1;
+                    } else {
+                        carrito.push({ id: pizzaId, cantidad: 1 });
+                    }
+                } else if (btn.classList.contains('btn-minus')) {
+                    if (item && item.cantidad > 1) {
+                        item.cantidad -= 1;
+                    } else {
+                        carrito = carrito.filter(i => i.id !== pizzaId);
+                    }
+                }
+                
+                localStorage.setItem('carrito', JSON.stringify(carrito));
+                actualizarContadorCarrito();
+                actualizarBotonesCarrito();
+                
+                if (btn.closest('.cart-controls')) {
+                    mostrarToast('Cantidad actualizada');
+                }
+            }
+        });
+        
+        // Mostrar mensaje de confirmación
+        function mostrarToast(mensaje) {
+            const toast = document.getElementById('toastCarrito');
+            if (!toast) return;
+            
+            toast.querySelector('.toast-body').textContent = mensaje;
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+        }
+        
+        // Inicializar estado de los botones
+        actualizarBotonesCarrito();
+    }
+});
+</script>

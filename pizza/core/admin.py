@@ -18,3 +18,17 @@ class PedidoAdmin(admin.ModelAdmin):
     search_fields = ['nombre_cliente', 'pizza_solicitada']
     readonly_fields = ['fecha_pedido']
     ordering = ['-fecha_pedido']
+
+@admin.register(models.Categoria)
+class CategoriaAdmin(admin.ModelAdmin):
+    list_display = ['nombre']
+    search_fields = ['nombre']
+    
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+    
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser
+    
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser

@@ -18,7 +18,13 @@ class PedidoForm(forms.ModelForm):
         model = Pedido
         fields = ['nombre_cliente', 'pizza_solicitada', 'cantidad']
         widgets = {
-            'nombre_cliente': forms.TextInput(attrs={'class': 'form-control'}),
-            'pizza_solicitada': forms.Select(attrs={'class': 'form-control'}),
-            'cantidad': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'})
+            'nombre_cliente': forms.TextInput(
+                attrs={'class': 'form-control', 'placeholder': 'Ingrese su nombre'}
+            ),
+            'pizza_solicitada': forms.Select(
+                attrs={'class': 'form-control'}
+            ),
+            'cantidad': forms.NumberInput(
+                attrs={'class': 'form-control', 'min': '1', 'value': '1'}
+            )
         }

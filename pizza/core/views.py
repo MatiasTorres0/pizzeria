@@ -1,12 +1,13 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Sum, Count
 from django.db.models.functions import TruncDate
 
 from .forms import PedidoForm
-from .models import Pedido
+from .models import Pedido, Pizza, Categoria
 
 # Create your views here.
 def inicio(request):
@@ -42,3 +43,26 @@ def dashboard(request):
     ).order_by('-fecha')
     
     return render(request, 'core/dashboard.html', {'ventas': ventas_diarias})
+
+def menu(request):
+    categorias = Categoria.objects.all()
+    pizzas = Pizza.objects.filter(disponible=True)
+    return render(request, 'core/menu.html', {
+        'categorias': categorias,
+        'pizzas': pizzas
+    })
+
+@login_required
+def carrito(request):
+    return render(request, 'core/carrito.html')
+
+@login_required
+def perfil(request):
+    pedidos = Pedido.objects.filter(cliente=request.user).order_by('-fecha_pedido')
+    return render(request, 'core/perfil.html', {'pedidos': pedidos})
+
+def contacto(request):
+    return render(request, 'core/contacto.html')
+
+def about(request):
+    return render(request, 'core/about.html')

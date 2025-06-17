@@ -1,0 +1,169 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-5">
+    <h2 class="text-center mb-4">Nuestro Menú</h2>
+    
+    <div class="row">
+        {% for categoria in categorias %}
+        <div class="col-12 mb-4">
+            <h3>{{ categoria.nombre }}</h3>
+            <div class="row g-4">
+                {% for pizza in pizzas %}
+                {% if pizza.categoria == categoria %}
+                <div class="col-md-4">
+                    <div class="card h-100 shadow-sm">
+                        {% if pizza.imagen %}
+                        <img src="{{ pizza.imagen.url }}" class="card-img-top" alt="{{ pizza.nombre }}">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ pizza.nombre }}</h5>
+                            <p class="card-text">{{ pizza.descripcion }}</p>
+                            <p class="card-text"><strong>${{ pizza.precio }}</strong></p>
+                            
+                            <!-- Botón de carrito con estado -->
+                            <div class="d-flex align-items-center">
+                                <div class="cart-controls d-none">
+                                    <div class="input-group input-group-sm">
+                                        <button class="btn btn-outline-secondary btn-minus" type="button" 
+                                                data-id="{{ pizza.id }}">
+                                            <i class="bi bi-dash"></i>
+                                        </button>
+                                        <input type="text" class="form-control text-center quantity-display" 
+                                               value="1" disabled style="max-width: 40px;">
+                                        <button class="btn btn-outline-secondary btn-plus" type="button" 
+                                                data-id="{{ pizza.id }}">
+                                            <i class="bi bi-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <button class="btn btn-primary btn-add-cart w-100" 
+                                        data-id="{{ pizza.id }}"
+                                        data-nombre="{{ pizza.nombre }}"
+                                        data-precio="{{ pizza.precio }}">
+                                    <i class="bi bi-cart-plus"></i> Agregar al carrito
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Toast para notificaciones -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="toastCarrito" class="toast" role="alert">
+        <div class="toast-header">
+            <i class="bi bi-cart-check me-2"></i>
+            <strong class="me-auto">Carrito</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body">
+            ¡Producto agregado al carrito!
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const toast = new bootstrap.Toast(document.getElementById('toastCarrito'));
+    
+    // Inicializar carrito desde localStorage
+    let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+    
+    // Función para actualizar el contador del carrito
+    function actualizarContadorCarrito() {
+        const totalItems = carrito.reduce((sum, item) => sum + item.cantidad, 0);
+        document.getElementById('cart-count')?.setAttribute('data-count', totalItems);
+    }
+    
+    // Función para actualizar la interfaz de los botones
+    function actualizarBotonesCarrito() {
+        document.querySelectorAll('.btn-add-cart').forEach(btn => {
+            const pizzaId = btn.dataset.id;
+            const item = carrito.find(i => i.id === pizzaId);
+            
+            const container = btn.closest('.card-body').querySelector('.cart-controls');
+            const quantityDisplay = container?.querySelector('.quantity-display');
+            
+            if (item) {
+                // Mostrar controles de cantidad
+                btn.classList.add('d-none');
+                container.classList.remove('d-none');
+                if (quantityDisplay) quantityDisplay.value = item.cantidad;
+            } else {
+                // Mostrar botón de agregar
+                btn.classList.remove('d-none');
+                container?.classList.add('d-none');
+            }
+        });
+    }
+    
+    // Manejador para agregar al carrito
+    document.querySelectorAll('.btn-add-cart').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const pizzaId = this.dataset.id;
+            const pizzaNombre = this.dataset.nombre;
+            const pizzaPrecio = parseFloat(this.dataset.precio);
+            
+            const itemExistente = carrito.find(item => item.id === pizzaId);
+            
+            if (itemExistente) {
+                itemExistente.cantidad += 1;
+            } else {
+                carrito.push({
+                    id: pizzaId,
+                    nombre: pizzaNombre,
+                    precio: pizzaPrecio,
+                    cantidad: 1
+                });
+            }
+            
+            localStorage.setItem('carrito', JSON.stringify(carrito));
+            actualizarContadorCarrito();
+            actualizarBotonesCarrito();
+            toast.show();
+        });
+    });
+    
+    // Manejadores para los botones de cantidad
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-plus') || e.target.closest('.btn-minus')) {
+            const btn = e.target.closest('.btn-plus, .btn-minus');
+            const pizzaId = btn.dataset.id;
+            const item = carrito.find(i => i.id === pizzaId);
+            
+            if (btn.classList.contains('btn-plus')) {
+                item.cantidad += 1;
+            } else {
+                item.cantidad -= 1;
+                if (item.cantidad <= 0) {
+                    // Eliminar el item si la cantidad es 0
+                    carrito = carrito.filter(i => i.id !== pizzaId);
+                }
+            }
+            
+            localStorage.setItem('carrito', JSON.stringify(carrito));
+            actualizarContadorCarrito();
+            actualizarBotonesCarrito();
+            
+            if (item?.cantidad > 0) {
+                toast.show();
+            }
+        }
+    });
+    
+    // Inicializar estado de los botones al cargar la página
+    actualizarBotonesCarrito();
+});
+</script>
+{% endblock %}
